@@ -1,0 +1,118 @@
+:root {
+  --bg: #0b0f17;
+  --panel: #121826;
+  --text: #e7ecf3;
+  --muted: #9aa3b2;
+  --accent: #6aa0ff;
+  --accent-2: #59d3a5;
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, Arial, "Noto Sans";
+  background: radial-gradient(80% 80% at 10% 10%, #0f1422, #070a10);
+  color: var(--text);
+}
+
+.app {
+  max-width: 880px;
+  margin: 40px auto;
+  padding: 0 16px;
+}
+
+header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 16px;
+}
+
+h1 {
+  margin: 0;
+  font-weight: 700;
+  letter-spacing: 0.2px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.dot {
+  color: var(--accent);
+}
+
+.mode-badge {
+  padding: 6px 10px;
+  border-radius: 999px;
+  font-size: 12px;
+  color: #0b0f17;
+  background: var(--accent);
+}
+.mode-badge[data-mode="idle"] { background: var(--accent); }
+.mode-badge[data-mode="conversation"] { background: var(--accent-2); }
+
+main {
+  background: var(--panel);
+  border: 1px solid #1a2336;
+  border-radius: 16px;
+  box-shadow: 0 10px 35px rgba(0,0,0,0.35);
+  padding: 12px;
+}
+
+.chat {
+  height: 58vh;
+  overflow-y: auto;
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.msg {
+  padding: 10px 12px;
+  border-radius: 12px;
+  max-width: 80%;
+  line-height: 1.35;
+  white-space: pre-wrap;
+  word-wrap: break-word;
+  background: #0f1627;
+  border: 1px solid #1d2740;
+}
+
+.msg.user {
+  align-self: flex-end;
+  background: #13213a;
+  border-color: #21345b;
+}
+
+.msg.bot {
+  align-self: flex-start;
+}
+
+.controls {
+  display: flex;
+  gap: 10px;
+  padding: 10px 12px 14px;
+  align-items: center;
+}
+
+.controls button {
+  background: #0f1627;
+  color: var(--text);
+  border: 1px solid #1d2740;
+  padding: 10px 14px;
+  border-radius: 10px;
+  cursor: pointer;
+  transition: transform .05s ease, background .15s ease;
+}
+
+.controls button:hover { transform: translateY(-1px); background: #111b31; }
+.controls button:active { transform: translateY(0px) scale(0.98); }
+
+.hint {
+  margin-left: auto;
+  color: var(--muted);
+  font-size: 13px;
+}

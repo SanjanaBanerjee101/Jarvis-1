@@ -1,0 +1,174 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <title>Jarvis — Voice Assistant</title>
+  <link rel="stylesheet" href="/static/style.css"/>
+</head>
+<body>
+  <div class="app">
+    <header>
+      <h1>Jarvis <span class="dot">•</span> Voice Assistant</h1>
+      <div class="mode-badge" id="modeBadge" data-mode="idle">Idle (say “jarvis”)</div>
+    </header>
+
+    <main>
+      <section class="chat" id="chat"></section>
+
+      <section class="controls">
+        <input id="textInput" placeholder="Type here and press Enter…" />
+        <button id="sendBtn">Send</button>
+        <button id="startBtn">🎤 Start</button>
+        <button id="stopBtn">🛑 Stop Speaking</button>
+        <button id="resetBtn">♻️ Reset</button>
+        <div class="hint">
+          Wake word: <b>“jarvis”</b> • Interrupt: <b>“stop”</b> • Exit chat: <b>“go back” / “okay”</b>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <script>
+    // ---------- State ----------
+    let mode = "idle"; // "idle" | "conversation"
+    const chatEl = document.getElementById("chat");
+    const modeBadge = document.getElementById("modeBadge");
+
+    // ---------- Web Speech API (STT) ----------
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    const recognition = new SpeechRecognition();
+    recognition.continuous = true;
+    recognition.interimResults = false;
+    recognition.lang = "en-US";
+
+    // ---------- TTS ----------
+    function speak(text) {
+      if (!text) return;
+      window.speechSynthesis.cancel();
+      const utter = new SpeechSynthesisUtterance(text.replace(/[*#]+/g, ""));
+      utter.rate = 1.05;
+      utter.onend = () => { tryStartRecognition(); };
+      recognition.stop();
+      window.speechSynthesis.speak(utter);
+    }
+
+    function stopSpeaking() { window.speechSynthesis.cancel(); }
+
+    // ---------- UI helpers ----------
+    function addMsg(role, text) {
+      const item = document.createElement("div");
+      item.className = "msg " + (role === "user" ? "user" : role === 'system' ? 'system' : "bot");
+      item.textContent = text;
+      chatEl.appendChild(item);
+      chatEl.scrollTop = chatEl.scrollHeight;
+    }
+
+    function setMode(next) {
+      mode = next;
+      modeBadge.dataset.mode = next;
+      modeBadge.textContent = next === "conversation" ? "Conversation" : "Idle (say “jarvis”)";
+    }
+
+    // ---------- Backend calls (NO JSON) ----------
+    async function sendToServer(message) {
+      const body = new URLSearchParams({ message });
+      const res = await fetch("/chat", {
+        method: "POST",
+        headers: { "Content-Type": "application/x-www-form-urlencoded" },
+        body
+      });
+      const text = await res.text(); // <-- plain text
+      if (!res.ok) throw new Error(text || ("HTTP " + res.status));
+      return text.replace(/[*#]+/g, "");
+    }
+
+    async function resetServerHistory() {
+      await fetch("/reset", { method: "POST" });
+    }
+
+    // ---------- Recognition flow ----------
+    function tryStartRecognition() {
+      try { recognition.start(); } catch (e) { /* already started */ }
+    }
+
+    recognition.onresult = async (event) => {
+      const transcript = event.results[event.results.length - 1][0].transcript.trim().toLowerCase();
+      if (!transcript) return;
+
+      if (transcript.includes("stop")) { stopSpeaking(); addMsg("system", "⏹ Interrupted."); return; }
+
+      if (mode === "idle") {
+        if (transcript.includes("jarvis")) {
+          addMsg("user", "jarvis");
+          speak("Yes baby gurl");
+          setMode("conversation");
+        }
+        return;
+      }
+
+      if (transcript.includes("go back") || transcript.includes("okay")) {
+        addMsg("user", transcript);
+        speak("Going back.");
+        setMode("idle");
+        return;
+      }
+
+      addMsg("user", transcript);
+      try {
+        const reply = await sendToServer(transcript);
+        addMsg("bot", reply);
+        speak(reply);
+      } catch (err) {
+        addMsg("bot", "Error: " + err.message);
+      }
+    };
+
+    recognition.onerror = () => { setTimeout(tryStartRecognition, 400); };
+    recognition.onend = () => { if (!window.speechSynthesis.speaking) setTimeout(tryStartRecognition, 200); };
+
+    // ---------- Text input (Enter to send) ----------
+    const input = document.getElementById('textInput');
+    const sendBtn = document.getElementById('sendBtn');
+
+    async function sendTyped() {
+      const msg = input.value.trim();
+      if (!msg) return;
+      input.value = '';
+      addMsg('user', msg);
+      try {
+        const reply = await sendToServer(msg);
+        addMsg('bot', reply);
+        speak(reply);
+      } catch (e) {
+        addMsg('bot', 'Error: ' + e.message);
+      }
+    }
+
+    input.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') sendTyped();
+    });
+    sendBtn.addEventListener('click', sendTyped);
+
+    // ---------- Buttons ----------
+    document.getElementById("startBtn").onclick = async () => {
+      stopSpeaking();
+      await resetServerHistory();
+      chatEl.innerHTML = "";
+      setMode("idle");
+      addMsg("system", "🎤 Listening. Say “jarvis”.");
+      tryStartRecognition();
+    };
+
+    document.getElementById("stopBtn").onclick = () => { stopSpeaking(); addMsg("system", "⏹ Stopped speaking."); };
+
+    document.getElementById("resetBtn").onclick = async () => {
+      stopSpeaking();
+      await resetServerHistory();
+      chatEl.innerHTML = "";
+      setMode("idle");
+      addMsg("system", "♻️ Reset. Say “jarvis”.");
+    };
+  </script>
+</body>
+</html>
