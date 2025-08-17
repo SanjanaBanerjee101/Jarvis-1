@@ -10,8 +10,8 @@ import google.generativeai as genai
 app = Flask(__name__)
 
 # ---------- GEMINI SETUP ----------
-GEMINI_API_KEY = os.getenv("AIzaSyC47gKgmjaaPAMaBcL1g-IUja-bU7OMBbw")
-if GEMINI_API_KEY and GEMINI_API_KEY != "AIzaSyC47gKgmjaaPAMaBcL1g-IUja-bU7OMBbw":
+GEMINI_API_KEY = os.getenv("YOUR API KEY")
+if GEMINI_API_KEY and GEMINI_API_KEY != "YOUR API KEY":
     genai.configure(api_key=GEMINI_API_KEY)
 
 # Optional music library (dict: {song_name: url})
@@ -124,3 +124,4 @@ if __name__ == "__main__":
     except Exception:
         pass
     app.run(host="0.0.0.0", port=int(os.getenv("PORT", 5000)), debug=True)
+
